@@ -17,14 +17,16 @@ generateBoard = [1, 2, 3]
 createGame :: Handle -> Chan (Int, String) -> Bool -> IO ()
 createGame handle chan isServer = withSocketsDo $ do
     putStrLn "Created a new game."
-    when isServer (hPutStrLn handle (show generateBoard))
+    when isServer (hPrint handle (show generateBoard))
     mainLoop handle chan isServer
 
 mainLoop :: Handle -> Chan (Int, String) -> Bool -> IO ()
 mainLoop handle chan isServer = withSocketsDo $ do
     (src, input) <- readChan chan
     if input == "exit"
-      then return ()
+      then do
+        putStrLn "You or the other player quit.\n"
+        return ()
       else do
         if src == 0 -- 0 means stdin, 1 means a network message (fix this later)
         -- CASE: USER INPUT
@@ -40,7 +42,7 @@ mainLoop handle chan isServer = withSocketsDo $ do
           --   else do
           --     putStrLn "Not a valid set!"
         -- CASE: NETWORK MSG
-        else do
+        else
           putStrLn input
           -- Replace above with code that prints the set that the other player found
           -- If this player is a client, read the next message atomically and replace the game board
