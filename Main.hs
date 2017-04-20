@@ -89,8 +89,8 @@ combinations n xs = do y:xs' <- tails xs
                        return (y:ys)
 
 -- add 3 given cards to board
-addThree :: [Card] -> Card -> Card -> Card -> [Card]
-addThree deck c1 c2 c3 = c1 : c2 : c3 : deck
+addThree' :: [Card] -> Card -> Card -> Card -> [Card]
+addThree' deck c1 c2 c3 = c1 : c2 : c3 : deck
 
 -- add 3 given cards to board
 addThree :: [Card] -> (Card, Card, Card) -> [Card]
@@ -103,9 +103,9 @@ removeListThree cards (c1:c2:c3:[]) = removeOne c3 (removeOne c2 (removeOne c1 c
 removeListThree cards _ = error "tried to remove more than three cards from board"
 
 -- remove 3 given cards from board
-removeThree :: [Card] -> Card -> Card -> Card -> [Card]
-removeThree [] c1 c2 c3 = []
-removeThree cards c1 c2 c3 = removeOne c3 (removeOne c2 (removeOne c1 cards))
+removeThree' :: [Card] -> Card -> Card -> Card -> [Card]
+removeThree' [] c1 c2 c3 = []
+removeThree' cards c1 c2 c3 = removeOne c3 (removeOne c2 (removeOne c1 cards))
 
 -- remove 3 given cards from board
 removeThree :: [Card] -> (Card, Card, Card) -> [Card]
