@@ -82,6 +82,22 @@ checkSets (c:cs) cards =
     (c1 : c2 : c3 : []) -> if (validSet (Just (c1, c2, c3)) cards) then True else (checkSets cs cards)
     _                   -> False
 
+
+-- Does the board contain any sets?
+getValidSet :: [Card] -> IO ()
+getValidSet [] = print "nooo"
+getValidSet cards = getValidSet' (combinations 3 cards) cards
+
+-- Get a valid Set
+getValidSet' :: [[Card]] -> [Card] -> IO ()
+getValidSet' [] c = print "ahhhh"
+getValidSet' (c:cs) cards =
+  case c of
+    (c1 : c2 : c3 : []) -> if (validSet (Just (c1, c2, c3)) cards) 
+      then printSet (c1,c2,c3)
+      else getValidSet' cs cards 
+    _                   -> print "ughhh"
+
 -- returns list of possible sets
 combinations :: Int -> [Card] -> [[Card]]
 combinations 0 _  = return []
@@ -145,13 +161,15 @@ genAll = do
   return $ Card shape filling number color
 
 -- pick n randomly
-drawCards :: Int -> [a] -> IO [a]
+--        n cards -> deck -> drawn cards
+drawCards :: Int -> [Card] -> IO [Card]
 drawCards _ [] = return []
 drawCards n cards
-    | n < 0 = error "invalid number of cards"
+    | n <= 0 = return []
     | otherwise = do 
-      pos <- replicateM n $ getStdRandom $ randomR (0, (length cards) - 1)
-      return [cards!!p | p <- pos]
+        index <- getStdRandom $ randomR (0, (length cards) - 1)
+        rest <- (drawCards (n - 1) (removeOne (cards!!index) cards))
+        return (cards!!index : rest)
 
 -- parser for cards --
 
