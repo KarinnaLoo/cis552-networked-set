@@ -21,7 +21,7 @@ main = do
 
 hostGame :: IO ()
 hostGame = withSocketsDo $ do
-    sock <- listenOn $ PortNumber 4244
+    sock <- listenOn $ PortNumber 4247
     putStrLn "Starting server. Waiting for a client to connect..."
     handleConnections sock
     sClose sock
@@ -35,35 +35,35 @@ handleConnections sock = withSocketsDo $ do
 
 joinGame :: IO ()
 joinGame = do
-    handle <- connectTo "localhost" (PortNumber 4244)
+    handle <- connectTo "localhost" (PortNumber 4247)
     setupGameThreads handle False
     hClose handle
 
-getUserInput :: Chan (Int, String) -> IO ()
+getUserInput :: Chan (InputSource, Message) -> IO ()
 getUserInput chan = do
     str <- getLine
-    writeChan chan (0, str)
+    writeChan chan (Stdin, str)
     getUserInput chan
 
-getNetworkMsg :: Handle -> Chan (Int, String) -> IO ()
+getNetworkMsg :: Handle -> Chan (InputSource, Message) -> IO ()
 getNetworkMsg handle chan = do
     isHandleClosed <- hIsEOF handle
     if isHandleClosed
     then do
         putStrLn "Handle closed"
-        writeChan chan (1, "exit")
+        writeChan chan (Network, "exit")
     else do
         msg <- hGetLine handle
-        writeChan chan (1, msg)
+        writeChan chan (Network, msg)
         getNetworkMsg handle chan
 
-forkGameThread :: Handle -> Chan (Int, String) -> Bool -> IO (MVar ())
+forkGameThread :: Handle -> Chan (InputSource, Message) -> ServerFlag -> IO (MVar ())
 forkGameThread handle chan isServer = do
     mv <- newEmptyMVar
     _ <- forkFinally (MockGame.createGame handle chan isServer) (\_ -> putMVar mv ())
     return mv
 
-setupGameThreads :: Handle -> Bool -> IO ()
+setupGameThreads :: Handle -> ServerFlag -> IO ()
 setupGameThreads handle isServer = do
     chan <- newChan
     -- Forks three threads: 1 reads from stdin, 2 reads network msgs, 3 plays the game
