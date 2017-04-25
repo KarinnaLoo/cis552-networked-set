@@ -11,6 +11,7 @@ import qualified Data.Map as Map
 import Control.Applicative (Alternative(..))
 import Data.List (tails, delete)
 import Data.List.Split
+import Data.Maybe
 import System.Random
 import Control.Monad (replicateM)
 
@@ -49,27 +50,32 @@ data Color =
   | Purple
   deriving (Eq, Show, Enum)
 
+-- Checks if a set is in the board
+boardContainsSet :: (Card, Card, Card) -> [Card] -> Bool
+boardContainsSet (a,b,c) board =
+  (elem a board) && (elem b (removeOne a board)) && (elem c (removeOne b (removeOne a board)))
 
--- Function: are these three cards a set?
-validSet :: Maybe (Card, Card, Card) -> [Card] -> Bool
---validSet Shape
-validSet (Just (a@(Card s1 f1 n1 c1), b@(Card s2 f2 n2 c2), c@(Card s3 f3 n3 c3))) board = 
-  if ((elem a board) && (elem b (removeOne a board)) && (elem c (removeOne b (removeOne a board))))
-    then (validAttribute s1 s2 s3) && -- valid shapes
+-- Checks if set is playable
+playableSet :: Maybe (Card, Card, Card) -> [Card] -> Bool
+playableSet Nothing _ = False
+playableSet (Just set) board = (boardContainsSet set board) && (validSet set)
+
+-- Checks if the set is valid according to rules
+validSet :: (Card, Card, Card) -> Bool
+validSet (Card s1 f1 n1 c1, Card s2 f2 n2 c2, Card s3 f3 n3 c3) 
+  = (validAttribute s1 s2 s3) && -- valid shapes
     (validAttribute f1 f2 f3) && -- valid fillings
     (validAttribute n1 n2 n3) && -- valid numbers
     (validAttribute c1 c2 c3) -- valid colors
-    else False
-validSet Nothing _ = False
 
--- check if single attribute is valid in all 3 cards
+-- Checks if single attribute is valid in all 3 cards
 validAttribute :: Eq a => a -> a -> a -> Bool
 validAttribute a1 a2 a3
   | (a1 == a2 && a2 == a3) = True -- all same type
   | (a1 /= a2 && a2 /= a3 && a3 /= a1) = True -- all different type
   | otherwise = False -- not valid set of attributes
 
--- Does the board contain any sets?
+-- Checks if the board contains any sets
 playableBoard :: [Card] -> Bool
 playableBoard [] = False
 playableBoard cards = checkSets (combinations 3 cards) cards
@@ -79,11 +85,10 @@ checkSets :: [[Card]] -> [Card] -> Bool
 checkSets [] c = False
 checkSets (c:cs) cards =
   case c of
-    (c1 : c2 : c3 : []) -> if (validSet (Just (c1, c2, c3)) cards) then True else (checkSets cs cards)
+    (c1 : c2 : c3 : []) -> if (validSet (c1, c2, c3)) then True else (checkSets cs cards)
     _                   -> False
 
-
--- Does the board contain any sets?
+-- Tester function: Gets a valid set from board
 getValidSet :: [Card] -> IO ()
 getValidSet [] = print "nooo"
 getValidSet cards = getValidSet' (combinations 3 cards) cards
@@ -93,26 +98,22 @@ getValidSet' :: [[Card]] -> [Card] -> IO ()
 getValidSet' [] c = print "ahhhh"
 getValidSet' (c:cs) cards =
   case c of
-    (c1 : c2 : c3 : []) -> if (validSet (Just (c1, c2, c3)) cards) 
+    (c1 : c2 : c3 : []) -> if (validSet (c1, c2, c3)) 
       then printSet (c1,c2,c3)
       else getValidSet' cs cards 
     _                   -> print "ughhh"
 
--- returns list of possible sets
+-- Returns list of possible sets
 combinations :: Int -> [Card] -> [[Card]]
 combinations 0 _  = return []
 combinations n xs = do y:xs' <- tails xs
                        ys <- combinations (n-1) xs'
                        return (y:ys)
 
---updateBoardAndDeck :: (Card, Card, Card) -> [Card] -> [Card] -> ([Card], [Card])
---updateBoardAndDeck set deck board = (deck, board)
-
-updateBoardAndDeck :: Maybe (Card, Card, Card) -> [Card] -> [Card] -> IO ([Card], [Card])
-updateBoardAndDeck (Just set) deck board = do
+updateBoardAndDeck :: (Card, Card, Card) -> [Card] -> [Card] -> IO ([Card], [Card])
+updateBoardAndDeck set deck board = do
   let newBoard = removeThree board set -- remove set from board
   deckToBoard deck newBoard -- update board and deck
-updateBoardAndDeck Nothing deck board = deckToBoard deck board
 
 ----              deck      board     deck', board'  (?)  
 deckToBoard :: [Card] -> [Card] -> IO ([Card], [Card])
@@ -137,10 +138,10 @@ addThree :: [Card] -> (Card, Card, Card) -> [Card]
 addThree cards (c1, c2, c3) = c1 : c2 : c3 : cards
 
 -- remove n given cards from board
+-- Board -> Cards to remove -> New Board
 removeList :: [Card] -> [Card] -> [Card]
 removeList cards [] = cards
 removeList cards (x:xs) = removeList (removeOne x cards) xs
--- removeList cards _ = error "tried to remove more than three cards from board"
 
 -- remove 3 given cards from board
 removeThree :: [Card] -> (Card, Card, Card) -> [Card]
@@ -251,10 +252,6 @@ createGame = do
     putStrLn (show board)
     mainLoop deck board
 
-
--- wrapper :: P.Parser (Card, Card, Card) -> String -> (Card, Card, Card)
--- wrapper p str -> 
-
 mainLoop :: [Card] -> [Card] -> IO ()
 mainLoop deck board = do
     input <- getLine
@@ -267,10 +264,10 @@ mainLoop deck board = do
             putStrLn "You quit.\n"
             return ()
           else do            -- validates whether the user's input was a valid set, and if so sends a network msg
-            if (validSet (P.getParse parseCards input) board) -- check if input is valid
+            if (playableSet (P.getParse parseCards input) board) -- check if input is valid
               then do
                 -- UPDATE BOARD AND DECK
-                (deck', board') <- updateBoardAndDeck (P.getParse parseCards input) deck board
+                (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input) deck board
                 putStrLn "nice! you got a set."
                 putStrLn (show (board')) -- ** tells the server (locally) what the new board is
                 mainLoop deck' board' 
