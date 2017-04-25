@@ -20,35 +20,70 @@ import qualified ParserCombinators as P
 
 data Board = 
     Board [Card]
-  deriving (Eq, Show)
+  deriving (Eq)
 
 data Card =
     Card Shape Filling Number Color
-  deriving (Eq, Show)
+  deriving (Eq)
 
 data Shape =
     Triangle
   | Squiggle
   | Oval
-  deriving (Eq, Show, Enum)
+  deriving (Eq, Enum)
 
 data Filling =
     Shaded
   | Solid
   | Outline
-  deriving (Eq, Show, Enum)
+  deriving (Eq, Enum)
 
 data Number = 
     One 
   | Two
   | Three
-  deriving (Eq, Show, Enum)
+  deriving (Eq, Enum)
 
 data Color =
     Green
   | Red
   | Purple
-  deriving (Eq, Show, Enum)
+  deriving (Eq, Enum)
+
+instance Show Board where
+  show b =
+    -- show c1 ++ "   " ++ show c2 ++ "   " ++ show c3 ++ "   " ++ show c4 ++ "\n" ++ show (Board cs)
+    showHelper b (1 :: Int)
+    where
+      showHelper (Board (c : cs)) num
+        | num > 12         = ""
+        | num `mod` 4 == 0 = show num ++ show c ++ "\n" ++ showHelper (Board cs) (num + 1)
+        | otherwise        = show num ++ show c ++ (if num < 9 then "   " else "  ") ++
+                             showHelper (Board cs) (num + 1)
+      showHelper (Board []) _ = ""
+
+instance Show Card where
+  show (Card s f n c) = "[" ++ show s ++ " " ++ show f ++ " " ++ show n ++ " " ++ show c ++ "]"
+
+instance Show Shape where
+  show Triangle = "A"
+  show Squiggle = "B"
+  show Oval = "C"
+
+instance Show Filling where
+  show Shaded = "X"
+  show Solid = "O"
+  show Outline = "V"
+
+instance Show Number where
+  show One = "1"
+  show Two = "2"
+  show Three = "3"
+
+instance Show Color where
+  show Green = "@"
+  show Red = "#"
+  show Purple = "$"
 
 -- Checks if a set is in the board
 boardContainsSet :: (Card, Card, Card) -> [Card] -> Bool
@@ -251,7 +286,7 @@ createGame = do
     putStrLn "Created a new game."
     board <- drawCards 12 genAll
     let deck = removeList genAll board
-    putStrLn (show board)
+    putStrLn (show (Board board))
     mainLoop deck board
 
 mainLoop :: [Card] -> [Card] -> IO ()
