@@ -1,4 +1,4 @@
-module MultiplayerGame where
+module Logic where
 
 import Network
 import System.IO
@@ -12,7 +12,6 @@ import System.Random
 
 import qualified Parser as P
 import qualified ParserCombinators as P
-
 
 ------------------- Definitions -------------------
 
@@ -225,103 +224,3 @@ parseCards = pure (,,) <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP <* wsP(P
 -- parse 12 card input
 parseBoard :: P.Parser Board
 parseBoard = wsP(P.string "[") *> (wsP cardP `P.sepBy` wsP(P.string ",")) <* wsP(P.string "]")
-
-
-------------------- Debugging/Testing -------------------
-
--- Finds a valid set from board
-getValidSet :: Board -> IO ()
-getValidSet []    = error "Inconsistent board state"
-getValidSet cards = getValidSet' (combinations 3 cards) cards
-
--- Helper for above
-getValidSet' :: [[Card]] -> Board -> IO ()
-getValidSet' ([c1, c2, c3] : cs) cards =
-    if validSet (c1, c2, c3)
-      then printSet (c1, c2, c3)
-      else getValidSet' cs cards 
-getValidSet' _ _ = error "Inconsistent board state"
-
----- Printing the board
-printBoard :: Board -> IO ()
-printBoard [] = putStrLn "-----"
-printBoard (x:xs) = do 
-  print x
-  printBoard xs
-
----- Printing the set
-printSet :: Set -> IO ()
-printSet (x, y, z) = do 
-  putStr (show x)
-  putStr ","
-  putStr (show y)
-  putStr ","
-  print z
-
-
----------------------------------- THE GAME ---------------------------------------
-
-createGame :: Handle -> Chan (InputSource, Message) -> ServerFlag -> IO ()
-createGame handle chan isServer = withSocketsDo $ do
-    putStrLn "Created a new game."
-    board <- drawCards 12 genAll
-    let deck = removeList genAll board
-    when isServer (hPrint handle board >> displayBoard board)
-    mainLoop handle chan isServer deck board
-
-
-mainLoop :: Handle -> Chan (InputSource, Message) -> ServerFlag -> Deck -> Board -> IO ()
-mainLoop handle chan isServer deck board = withSocketsDo $
-    if not (playableBoard board) && null deck
-      then do
-        putStrLn "The game has ended."
-        hPutStrLn handle "The game has ended."
-      else do
-        (src, input) <- readChan chan
-        if input == "exit"
-          then putStrLn "You or the other player quit.\n"
-          else playTurn handle chan isServer deck board src input
-
-
-playTurn :: Handle -> Chan (InputSource, Message) -> ServerFlag ->
-            Deck -> Board -> InputSource -> Message -> IO ()
-playTurn handle chan isServer deck board src input = withSocketsDo $
-    if src == Stdin
-    then
-      -- validates whether the user's input was a valid set, and if so sends a network msg
-      if playableSet (P.getParse parseCards input) board
-        then do
-          putStrLn "Nice! You got a set."
-          hPutStrLn handle input
-          if isServer
-            then serverUpdateGameState
-            else updateGameState board
-        else do
-          putStrLn "Not a valid set or set not in board!"
-          updateGameState board
-    else if src == Network then
-      if isSet input -- Other player sent a valid set
-        then do
-          putStr "Other player found the set: "
-          putStrLn input
-          if isServer
-            then serverUpdateGameState
-            else updateGameState board
-        else do -- Server sent a new board to the client
-          let mBoard = P.getParse parseBoard input
-          if isJust mBoard
-            then do
-              let board' = fromJust mBoard
-              displayBoard board'
-              updateGameState board'
-            else
-              putStrLn "Received invalid board from server."
-    else
-      error "Unknown input source"
-    where serverUpdateGameState = do
-              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input)
-                                                     deck board
-              hPrint handle board' -- ** sends the new board to client
-              displayBoard board'
-              mainLoop handle chan isServer deck' board'
-          updateGameState = mainLoop handle chan isServer deck

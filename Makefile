@@ -1,5 +1,5 @@
 make:
-	ghc --make Main.hs
+	ghc --make -Wall Main.hs
 
 clean:
 	rm -f Main *.hi *.o

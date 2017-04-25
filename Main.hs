@@ -4,7 +4,7 @@ import MultiplayerGame
 import Network
 import System.IO
 import Control.Concurrent
-import Control.Exception
+import Control.Exception (catch, IOException)
 import Control.Monad
 import Data.Maybe
 
@@ -39,9 +39,9 @@ joinGame :: IO ()
 joinGame = do
     putStrLn "IP address of host: "
     addr <- getLine
-    mHandle <- catch ((connectTo addr (PortNumber 4242)) >>= (\h -> return (Just h)))
+    mHandle <- catch (fmap Just (connectTo addr (PortNumber 4242)))
                      (\e -> do
-                              let error = (e :: IOException) -- Need to specify type of e to compile
+                              let _ = e :: IOException -- Need to specify type of e to compile
                               putStrLn "Couldn't connect to server.\n"
                               return Nothing)
     when (isJust mHandle)
