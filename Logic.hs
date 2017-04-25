@@ -1,32 +1,17 @@
 module Logic where
 
-import Network
-import System.IO
-import Control.Concurrent
-
 import Control.Applicative (Alternative(..))
-import Control.Monad
 import Data.List (tails, delete)
-import Data.Maybe
 import System.Random
 
 import qualified Parser as P
 import qualified ParserCombinators as P
 
-------------------- Definitions -------------------
+------------------- Definitions (Game State) -------------------
 
--- Networking
-type ServerFlag = Bool
-type Message = String
-data InputSource =
-    Stdin
-  | Network
-  deriving (Eq)
-
--- Game State
-type Deck = [Card]
+type Deck  = [Card]
 type Board = [Card]
-type Set = (Card, Card, Card)
+type Set   = (Card, Card, Card)
 
 data Card =
     Card Shape Filling Number Color
@@ -55,6 +40,46 @@ data Color =
   | Red
   | Purple
   deriving (Eq, Show, Enum)
+
+
+------------------- GUI to print board nicely -------------------
+
+prettyShowBoard :: Board -> String
+prettyShowBoard b =
+    showHelper b (1 :: Int)
+    where
+      showHelper (c : cs) num
+        | num > 12         = ""
+        | num `mod` 4 == 0 = show num ++ pshow c ++ "\n" ++ showHelper cs (num + 1)
+        | otherwise        = show num ++ pshow c ++ (if num < 9 then "   " else "  ") ++
+                             showHelper cs (num + 1)
+      showHelper [] _      = ""
+
+class PrettyShow a where
+    pshow :: a -> String
+
+instance PrettyShow Card where
+  pshow (Card s f n c) = "[" ++ pshow s ++ " " ++ pshow f ++ " " ++ pshow n ++ " " ++ pshow c ++ "]"
+
+instance PrettyShow Shape where
+  pshow Triangle = "A"
+  pshow Squiggle = "B"
+  pshow Oval     = "C"
+
+instance PrettyShow Filling where
+  pshow Shaded  = "X"
+  pshow Solid   = "O"
+  pshow Outline = "V"
+
+instance PrettyShow Number where
+  pshow One   = "1"
+  pshow Two   = "2"
+  pshow Three = "3"
+
+instance PrettyShow Color where
+  pshow Green  = "@"
+  pshow Red    = "#"
+  pshow Purple = "$"
 
 
 ------------------- Game Logic Functions -------------------
@@ -131,8 +156,6 @@ addThree cards (c1, c2, c3) = c1 : c2 : c3 : cards
 
 -- remove n given cards from board
 removeList :: Board -> [Card] -> Board
--- removeList cards []     = cards
--- removeList cards (x:xs) = removeList (removeOne x cards) xs
 removeList = foldl (flip removeOne)
 
 -- remove 3 given cards from board
@@ -173,7 +196,8 @@ countLetters str c = length $ filter (== c) str
 displayBoard :: Board -> IO ()
 displayBoard b = do
                    putStrLn "Board: "
-                   print b
+                   putStrLn (prettyShowBoard b) -- This line prints the board with a GUI
+                   print b                      -- This line prints the board as is
 
 
 ------------------- Parsing -------------------
@@ -224,3 +248,35 @@ parseCards = pure (,,) <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP <* wsP(P
 -- parse 12 card input
 parseBoard :: P.Parser Board
 parseBoard = wsP(P.string "[") *> (wsP cardP `P.sepBy` wsP(P.string ",")) <* wsP(P.string "]")
+
+
+----------------- Debugging/Testing -------------------
+
+-- Finds a valid set from board
+getValidSet :: Board -> IO ()
+getValidSet []    = error "Inconsistent board state"
+getValidSet cards = getValidSet' (combinations 3 cards) cards
+
+-- Helper for above
+getValidSet' :: [[Card]] -> Board -> IO ()
+getValidSet' ([c1, c2, c3] : cs) cards =
+    if validSet (c1, c2, c3)
+      then printSet (c1, c2, c3)
+      else getValidSet' cs cards 
+getValidSet' _ _ = error "Inconsistent board state"
+
+---- Printing the board
+printBoard :: Board -> IO ()
+printBoard [] = putStrLn "-----"
+printBoard (x:xs) = do 
+  print x
+  printBoard xs
+
+---- Printing the set
+printSet :: Set -> IO ()
+printSet (x, y, z) = do 
+  putStr (show x)
+  putStr ","
+  putStr (show y)
+  putStr ","
+  print z

@@ -1,12 +1,13 @@
 module Main where
 
-import MultiplayerGame
 import Network
 import System.IO
 import Control.Concurrent
 import Control.Exception (catch, IOException)
 import Control.Monad
 import Data.Maybe
+
+import MultiplayerGame
 
 
 main :: IO ()
