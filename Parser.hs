@@ -20,12 +20,12 @@ newtype Parser a = P (String -> [(a, String)])
 doParse :: Parser a -> String -> [(a, String)]
 doParse (P p) s = p s
 
-getParse :: Parser a -> String -> a
+getParse :: Parser a -> String -> Maybe a
 getParse p s =
   case doParse p s of
-    [(res, [])] -> res
-    [(_, rs)]   -> error "Parse not complete."
-    _           -> error "Parser error."
+    [(res, [])] -> Just res
+    [(_, rs)]   -> Nothing
+    _           -> Nothing
 
 
 -- | Return the next character from the input
