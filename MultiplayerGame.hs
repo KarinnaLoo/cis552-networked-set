@@ -1,4 +1,4 @@
-module MockGame where
+module MultiplayerGame where
 
 import Network
 import System.IO
@@ -78,8 +78,8 @@ validSet (Card s1 f1 n1 c1, Card s2 f2 n2 c2, Card s3 f3 n3 c3)
 -- Checks if single attribute is valid in all 3 cards
 validAttribute :: Eq a => a -> a -> a -> Bool
 validAttribute a1 a2 a3
-  | (a1 == a2 && a2 == a3) = True -- all same type
-  | (a1 /= a2 && a2 /= a3 && a3 /= a1) = True -- all different type
+  | a1 == a2 && a2 == a3 = True -- all same type
+  | a1 /= a2 && a2 /= a3 && a3 /= a1 = True -- all different type
   | otherwise = False -- not valid set of attributes
 
 -- Checks if the board contains any sets
@@ -92,8 +92,8 @@ checkSets :: [[Card]] -> Bool
 checkSets []     = False
 checkSets (c:cs) =
   case c of
-    (c1 : c2 : c3 : []) -> if validSet (c1, c2, c3) then True else checkSets cs
-    _                   -> error "Not a set"
+    [c1, c2, c3] -> validSet (c1, c2, c3) || checkSets cs
+    _            -> error "Not a set"
 
 -- Tester function: Gets a valid set from board
 getValidSet :: Board -> IO ()
@@ -105,10 +105,10 @@ getValidSet' :: [[Card]] -> Board -> IO ()
 getValidSet' [] _ = print "ahhhh"
 getValidSet' (c:cs) cards =
   case c of
-    (c1 : c2 : c3 : []) -> if (validSet (c1, c2, c3)) 
+    [c1, c2, c3] -> if validSet (c1, c2, c3)
       then printSet (c1, c2, c3)
       else getValidSet' cs cards 
-    _                   -> print "ughhh"
+    _            -> print "ughhh"
 
 -- Returns list of possible sets
 combinations :: Int -> Board -> [[Card]]
@@ -144,8 +144,9 @@ addThree cards (c1, c2, c3) = c1 : c2 : c3 : cards
 
 -- remove n given cards from board
 removeList :: Board -> [Card] -> Board
-removeList cards [] = cards
-removeList cards (x:xs) = removeList (removeOne x cards) xs
+-- removeList cards [] = cards
+-- removeList cards (x:xs) = removeList (removeOne x cards) xs
+removeList = foldl (flip removeOne)
 
 -- remove 3 given cards from board
 removeThree :: Board -> (Card, Card, Card) -> Board
@@ -154,15 +155,15 @@ removeThree cards (c1, c2, c3) = removeOne c3 (removeOne c2 (removeOne c1 cards)
 
 -- remove given card if in deck (helper function)
 removeOne :: Card -> Deck -> Deck
-removeOne c cards = if elem c cards then delete c cards else error "not in deck"
+removeOne c cards = if c `elem` cards then delete c cards else error "not in deck"
 
 -- Generate all possible cards
 genAll :: [Card]
-genAll = do 
-  shape <- [Triangle, Squiggle, Oval]
+genAll = do
+  shape   <- [Triangle, Squiggle, Oval]
   filling <- [Shaded, Solid, Outline]
-  number <- [One, Two, Three]
-  color <- [Green, Red, Purple]
+  number  <- [One, Two, Three]
+  color   <- [Green, Red, Purple]
   return $ Card shape filling number color
 
 -- pick n cards randomly
@@ -172,7 +173,7 @@ drawCards n cards
     | n <= 0 = return []
     | otherwise = do 
         index <- getStdRandom $ randomR (0, length cards - 1)
-        rest <- drawCards (n - 1) (removeOne (cards!!index) cards)
+        rest  <- drawCards (n - 1) (removeOne (cards!!index) cards)
         return (cards!!index : rest)
 
 -- parser for cards --
@@ -186,7 +187,7 @@ wsP p =  func <$> many spaceParser *> p <* many spaceParser where
   func = pure const
 
 constP :: String -> a -> P.Parser a
-constP s x = const x <$> (P.string s)
+constP s x = const x <$> P.string s
 
 -- parse shapes
 shapeP :: P.Parser Shape
@@ -214,15 +215,15 @@ colorP = constP "Green" Green <|>
 
 -- parse card
 cardP :: P.Parser Card
-cardP = pure Card <* wsP(P.string "Card") <*> wsP(shapeP) <*> wsP(fillingP) <*> wsP(numberP) <*> wsP(colorP)
+cardP = pure Card <* wsP(P.string "Card") <*> wsP shapeP <*> wsP fillingP <*> wsP numberP <*> wsP colorP
 
 -- parse three card input
 parseCards :: P.Parser Set
-parseCards = pure (,,) <*> wsP(cardP) <* wsP(P.string ",") <*> wsP(cardP) <* wsP(P.string ",") <*> wsP(cardP)
+parseCards = pure (,,) <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP
 
 -- parse 12 card input
 parseBoard :: P.Parser Board
-parseBoard = wsP(P.string "[") *> (wsP(cardP) `P.sepBy` wsP(P.string ",")) <* wsP(P.string "]")
+parseBoard = wsP(P.string "[") *> (wsP cardP `P.sepBy` wsP(P.string ",")) <* wsP(P.string "]")
 
 -- possibly redo this later
 isSet :: String -> Bool
@@ -240,12 +241,12 @@ printBoard (x:xs) = do
 
 ---- printing the set
 printSet :: Set -> IO ()
-printSet (x,y,z) = do 
-  putStr (show (x))
+printSet (x, y, z) = do 
+  putStr (show x)
   putStr ","
-  putStr (show (y))
+  putStr (show y)
   putStr ","
-  putStrLn (show (z))
+  print z
 
 displayBoard :: Board -> IO ()
 displayBoard b = do
@@ -269,15 +270,11 @@ mainLoop handle chan isServer deck board = withSocketsDo $
       then do
         putStrLn "The game has ended."
         hPutStrLn handle "The game has ended."
-        return ()
       else do
         (src, input) <- readChan chan
         if input == "exit"
-          then do
-            putStrLn "You or the other player quit.\n"
-            return ()
-          else
-            playTurn handle chan isServer deck board src input
+          then putStrLn "You or the other player quit.\n"
+          else playTurn handle chan isServer deck board src input
 
 
 playTurn :: Handle -> Chan (InputSource, Message) -> ServerFlag ->
@@ -289,41 +286,36 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
       if playableSet (P.getParse parseCards input) board
         then do
           putStrLn "Nice! You got a set."
-          hPutStrLn handle input -- ** sends the set over the network
+          hPutStrLn handle input
           if isServer
-            then do
-              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input)
-                                                     deck board
-              hPrint handle board'-- ** sends the new board -> client
-              displayBoard board'
-              mainLoop handle chan isServer deck' board'
-            else
-              mainLoop handle chan isServer deck board
+            then serverUpdateGameState
+            else updateGameState board
         else do
           putStrLn "Not a valid set or set not in board!"
-          mainLoop handle chan isServer deck board
+          updateGameState board
     else if src == Network then
-      if isSet input
+      if isSet input -- Other player sent a valid set
         then do
           putStr "Other player found the set: "
-          putStrLn input -- ** print the set that was played
+          putStrLn input
           if isServer
-            then do
-              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input)
-                                                     deck board
-              hPrint handle board' -- ** sends the new board to client (!)
-              displayBoard board'
-              mainLoop handle chan isServer deck' board'
-            else
-              mainLoop handle chan isServer deck board
-        else do -- else it's a board (client receiving)
+            then serverUpdateGameState
+            else updateGameState board
+        else do -- Server sent a new board to the client
           let mBoard = P.getParse parseBoard input
           if validBoard mBoard
             then do
               let board' = fromJust mBoard
               displayBoard board'
-              mainLoop handle chan isServer deck board'
+              updateGameState board'
             else
               putStrLn "Received invalid board from server."
     else
       error "Unknown input source"
+    where serverUpdateGameState = do
+              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input)
+                                                     deck board
+              hPrint handle board' -- ** sends the new board to client
+              displayBoard board'
+              mainLoop handle chan isServer deck' board'
+          updateGameState = mainLoop handle chan isServer deck
