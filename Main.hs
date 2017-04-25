@@ -4,22 +4,26 @@ import MultiplayerGame
 import Network
 import System.IO
 import Control.Concurrent
+import Control.Exception
+import Control.Monad
+import Data.Maybe
 
 
 main :: IO ()
 main = do
-    putStrLn "Welcome to Set.\nType 'join' to join an existing game or 'host' to create a new game."
+    putStrLn $ "~~~~~~~~~~~~~~~\nWelcome to Set.\n~~~~~~~~~~~~~~~\n" ++
+               "Type 'join' to join an existing game or 'host' to create a new game."
     str <- getLine
     case str of
      "host" -> hostGame >> main
      "join" -> joinGame >> main
      "exit" -> return ()
-     _      -> putStrLn "Unknown command" >> main
+     _      -> putStrLn "Unknown command\n" >> main
 
 
 hostGame :: IO ()
 hostGame = withSocketsDo $ do
-    sock <- listenOn $ PortNumber 4247
+    sock <- listenOn $ PortNumber 4242
     putStrLn "Starting server. Waiting for a client to connect..."
     handleConnections sock
     sClose sock
@@ -33,9 +37,18 @@ handleConnections sock = withSocketsDo $ do
 
 joinGame :: IO ()
 joinGame = do
-    handle <- connectTo "localhost" (PortNumber 4247)
-    setupGameThreads handle False
-    hClose handle
+    putStrLn "IP address of host: "
+    addr <- getLine
+    mHandle <- catch ((connectTo addr (PortNumber 4242)) >>= (\h -> return (Just h)))
+                     (\e -> do
+                              let error = (e :: IOException) -- Need to specify type of e to compile
+                              putStrLn "Couldn't connect to server.\n"
+                              return Nothing)
+    when (isJust mHandle)
+         (do
+            let handle = fromJust mHandle
+            setupGameThreads handle False
+            hClose handle)
 
 getUserInput :: Chan (InputSource, Message) -> IO ()
 getUserInput chan = do
