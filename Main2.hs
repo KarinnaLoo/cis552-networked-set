@@ -21,7 +21,7 @@ main = do
 
 hostGame :: IO ()
 hostGame = withSocketsDo $ do
-    sock <- listenOn $ PortNumber 4242
+    sock <- listenOn $ PortNumber 4244
     putStrLn "Starting server. Waiting for a client to connect..."
     handleConnections sock
     sClose sock
@@ -35,7 +35,7 @@ handleConnections sock = withSocketsDo $ do
 
 joinGame :: IO ()
 joinGame = do
-    handle <- connectTo "localhost" (PortNumber 4242)
+    handle <- connectTo "localhost" (PortNumber 4244)
     setupGameThreads handle False
     hClose handle
 
@@ -49,7 +49,8 @@ getNetworkMsg :: Handle -> Chan (Int, String) -> IO ()
 getNetworkMsg handle chan = do
     isHandleClosed <- hIsEOF handle
     if isHandleClosed
-    then
+    then do
+        putStrLn "Handle closed"
         writeChan chan (1, "exit")
     else do
         msg <- hGetLine handle

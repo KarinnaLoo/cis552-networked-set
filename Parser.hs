@@ -24,7 +24,7 @@ getParse :: Parser a -> String -> Maybe a
 getParse p s =
   case doParse p s of
     [(res, [])] -> Just res
-    [(_, rs)]   -> Nothing
+    [(_, _)]   -> Nothing
     _           -> Nothing
 
 

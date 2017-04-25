@@ -238,9 +238,11 @@ printBoard (x:xs) = do
 ---- printing the set
 printSet:: (Card, Card, Card) -> IO ()
 printSet (x,y,z) = do 
-  print x
-  print y
-  print z
+  putStr (show (x))
+  putStr ","
+  putStr (show (y))
+  putStr ","
+  putStrLn (show (z))
 
 ---------------------------------- THE GAME ---------------------------------------
 
