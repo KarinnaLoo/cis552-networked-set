@@ -29,8 +29,9 @@ mainLoop deck board = do
     else if playableSet playedSet board
     --else if playableSet (P.getParse parseCards input) board
       then do
-        (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards stringSet)
-                                               deck board
+        (deck', board') <- updateBoardAndDeck
+                              (setToList $ fromJust $ P.getParse parseCards stringSet)
+                               deck board
         putStrLn "Nice! you got a set."
         displayBoard board'
         mainLoop deck' board' 

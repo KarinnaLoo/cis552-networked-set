@@ -88,8 +88,9 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
     else
       error "Unknown input source"
     where serverUpdateGameState input' = do
-              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input')
-                                                     deck board
+              (deck', board') <- updateBoardAndDeck
+                                    (setToList $ fromJust $ P.getParse parseCards input')
+                                     deck board
               hPrint handle board' -- ** sends the new board to client
               displayBoard board'
               mainLoop handle chan isServer deck' board'

@@ -91,12 +91,12 @@ getCards _ Nothing            = Nothing
 
 removePunc :: Maybe Set -> String
 removePunc Nothing    = ""
-removePunc (Just set) = [ x | x <- (show set), not (x `elem` "()") ]
+removePunc (Just set) = [ x | x <- show set, notElem x "()" ]
 
--- Checks if a set is in the board
+-- Checks if a set is in the board (note that no duplicates are allowed)
 boardContainsSet :: Set -> Board -> Bool
 boardContainsSet (a, b, c) board =
-  elem a board && elem b (removeOne a board) && elem c (removeOne b (removeOne a board))
+  elem a board && elem b board && elem c board && a /= b && a /= c && b /= c
 
 -- Checks if set is playable
 playableSet :: Maybe Set -> Board -> Bool
@@ -138,22 +138,41 @@ combinations n xs = do y:xs' <- tails xs
                        ys <- combinations (n-1) xs'
                        return (y:ys)
 
-updateBoardAndDeck :: Set -> Deck -> Board -> IO (Deck, Board)
-updateBoardAndDeck set deck board = do
-  let newBoard = removeThree board set -- remove set from board
-  deckToBoard deck newBoard            -- update board and deck
+-- updateBoardAndDeck :: Set -> Deck -> Board -> IO (Deck, Board)
+-- updateBoardAndDeck set deck board = do
+--   let newBoard = removeThree board set -- remove set from board
+--   deckToBoard deck newBoard            -- update board and deck
 
-deckToBoard :: Deck -> Board -> IO (Deck, Board)
-deckToBoard [] board = return ([], board)
-deckToBoard deck board = do
-  cardsDrawn <- drawCards 3 deck
-  let d' = removeList deck cardsDrawn
-  let b' = addList board cardsDrawn
-  if not (playableBoard b')
-    then
-      deckToBoard d' b'
-    else
-      return (d', b')
+-- deckToBoard :: Deck -> Board -> IO (Deck, Board)
+-- deckToBoard [] board = return ([], board)
+-- deckToBoard deck board = do
+--   cardsDrawn <- drawCards 3 deck
+--   let d' = removeList deck cardsDrawn
+--   let b' = addList board cardsDrawn
+--   if not (playableBoard b')
+--     then
+--       deckToBoard d' b'
+--     else
+--       return (d', b')
+
+replaceCard :: Card -> Card -> Board -> Board
+replaceCard oldCard newCard board =
+  case board of
+    (c : cs) -> if c == oldCard then newCard : cs else c : replaceCard oldCard newCard cs
+    []       -> error "Card to be replaced not in board"
+
+setToList :: Set -> [Card]
+setToList (c1, c2, c3) = [c1, c2, c3]
+
+-- TODO: Check if board is playable
+updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)
+updateBoardAndDeck (c : cs) deck board = do
+  newCardList <- drawCards 1 deck
+  let newCard  = head newCardList
+  let d'       = removeOne newCard deck
+  let b'       = replaceCard c newCard board
+  updateBoardAndDeck cs d' b'
+updateBoardAndDeck []       deck board = return (deck, board)
 
 -- add n given cards to board
 addList :: Board -> [Card] -> Board
