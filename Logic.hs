@@ -83,6 +83,13 @@ instance PrettyShow Color where
 
 
 ------------------- Game Logic Functions -------------------
+--          board ->  number cards  -> Set
+-- Gets the cards corresponding to given ints
+getCards :: [Card] -> (Int,Int,Int) -> Maybe Set
+getCards board (x,y,z) = Just (board!!(x-1), board!!(y-1), board!!(z-1))
+
+removePunc :: String -> String
+removePunc xs = [ x | x <- xs, not (x `elem` "()") ]
 
 -- Checks if a set is in the board
 boardContainsSet :: Set -> Board -> Bool
@@ -236,6 +243,10 @@ colorP :: P.Parser Color
 colorP = constP "Green"  Green   <|>
          constP "Red"    Red     <|>
          constP "Purple" Purple 
+
+-- parse input number
+parseInP :: P.Parser (Int,Int,Int)
+parseInP =  pure (,,) <*> wsP P.int <* wsP(P.string ",") <*> wsP P.int <* wsP(P.string ",") <*> wsP P.int
 
 -- parse card
 cardP :: P.Parser Card
