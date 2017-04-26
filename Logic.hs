@@ -46,14 +46,14 @@ data Color =
 
 prettyShowBoard :: Board -> String
 prettyShowBoard b =
-    showHelper b (1 :: Int)
+    showHelper b (1 :: Int) (length b)
     where
-      showHelper (c : cs) num
-        | num > 12         = ""
-        | num `mod` 4 == 0 = show num ++ pshow c ++ "\n" ++ showHelper cs (num + 1)
-        | otherwise        = show num ++ pshow c ++ (if num < 9 then "   " else "  ") ++
-                             showHelper cs (num + 1)
-      showHelper [] _      = ""
+      showHelper b@(c : cs) num boardLength
+        | num > boardLength   = ""
+        | num `mod` 4 == 0    = show num ++ pshow c ++ "\n" ++ showHelper cs (num + 1) boardLength
+        | otherwise           = show num ++ pshow c ++ (if num < 9 then "   " else "  ") ++
+                                showHelper cs (num + 1) boardLength
+      showHelper [] _ _       = ""
 
 class PrettyShow a where
     pshow :: a -> String
@@ -91,7 +91,7 @@ getCards _ Nothing            = Nothing
 
 removePunc :: Maybe Set -> String
 removePunc Nothing    = ""
-removePunc (Just set) = [ x | x <- show set, notElem x "()" ]
+removePunc (Just set) = [ x | x <- show set, x `notElem` "()" ]
 
 -- Checks if a set is in the board (note that no duplicates are allowed)
 boardContainsSet :: Set -> Board -> Bool
@@ -143,17 +143,16 @@ combinations n xs = do y:xs' <- tails xs
 --   let newBoard = removeThree board set -- remove set from board
 --   deckToBoard deck newBoard            -- update board and deck
 
--- deckToBoard :: Deck -> Board -> IO (Deck, Board)
--- deckToBoard [] board = return ([], board)
--- deckToBoard deck board = do
---   cardsDrawn <- drawCards 3 deck
---   let d' = removeList deck cardsDrawn
---   let b' = addList board cardsDrawn
---   if not (playableBoard b')
---     then
---       deckToBoard d' b'
---     else
---       return (d', b')
+-- Adds three cards to board (called when board has no sets)
+deckToBoard :: Deck -> Board -> IO (Deck, Board)
+deckToBoard [] board   = return ([], board)
+deckToBoard deck board = do
+  cardsDrawn <- drawCards 3 deck
+  let d' = removeList deck cardsDrawn
+  let b' = addList board cardsDrawn
+  if not (playableBoard b')
+    then deckToBoard d' b'
+    else return (d', b')
 
 replaceCard :: Card -> Card -> Board -> Board
 replaceCard oldCard newCard board =
@@ -172,7 +171,10 @@ updateBoardAndDeck (c : cs) deck board = do
   let d'       = removeOne newCard deck
   let b'       = replaceCard c newCard board
   updateBoardAndDeck cs d' b'
-updateBoardAndDeck []       deck board = return (deck, board)
+updateBoardAndDeck []       deck board =
+  if not (playableBoard board) && not (null deck)
+    then deckToBoard deck board
+    else return (deck, board)
 
 -- add n given cards to board
 addList :: Board -> [Card] -> Board
