@@ -19,9 +19,8 @@ createGame = do
 mainLoop :: Deck -> Board -> IO ()
 mainLoop deck board = do
     input <- getLine
-    let ints = fromJust (P.getParse parseInP input)
+    let ints = P.getParse parseInP input
     let playedSet = getCards board ints
-    let stringSet = removePunc (show (fromJust playedSet)) 
     if not (playableBoard board) && null deck
       then putStrLn "The game has ended.\n"
     else if input == "exit"
@@ -29,6 +28,7 @@ mainLoop deck board = do
     else if playableSet playedSet board
     --else if playableSet (P.getParse parseCards input) board
       then do
+        let stringSet = removePunc (show (fromJust playedSet)) 
         (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards stringSet)
                                                deck board
         putStrLn "Nice! you got a set."

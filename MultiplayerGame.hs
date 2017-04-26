@@ -30,9 +30,6 @@ createGame handle chan isServer = withSocketsDo $ do
     when isServer (hPrint handle board >> displayBoard board)
     mainLoop handle chan isServer deck board
 
-removePunc :: String -> String
-removePunc xs = [ x | x <- xs, not (x `elem` "()") ]
-
 mainLoop :: Handle -> Chan (InputSource, Message) -> ServerFlag -> Deck -> Board -> IO ()
 mainLoop handle chan isServer deck board = withSocketsDo $
     if not (playableBoard board) && null deck
@@ -51,14 +48,14 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
     if src == Stdin
     then do
       -- validates whether the user's input was a valid set, and if so sends a network msg
-      let ints = fromJust (P.getParse parseInP input)
+      let ints = P.getParse parseInP input
       let playedSet = getCards board ints
-      let justSet = fromJust (playedSet)
-      let stringSet = removePunc (show justSet) 
       if playableSet playedSet board
       --if playableSet (P.getParse parseCards input) board
         then do
           putStrLn "Nice! You got a set."
+          let justSet = fromJust (playedSet)
+          let stringSet = removePunc (show justSet)
           hPutStrLn handle stringSet
           if isServer
             then serverUpdateGameState
