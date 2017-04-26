@@ -65,8 +65,14 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
     else if src == Network then
       if isSet input -- Other player sent a valid set
         then do
-          putStr "Other player found the set: "
-          putStrLn input
+          putStrLn "Other player found the set: "
+          let set = P.getParse parseCards input
+          case set of 
+            Just (c1,c2,c3) -> do
+              putStrLn (pshow c1)
+              putStrLn (pshow c2)
+              putStrLn (pshow c3)
+            _ -> putStrLn input
           if isServer
             then serverUpdateGameState input
             else updateGameState board
