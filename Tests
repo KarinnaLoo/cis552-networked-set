@@ -1,0 +1,44 @@
+-- Testing code for HW06
+-- Add your own test cases to this file
+-- Make sure that you read the .lhs version for clarification
+module Tests where
+
+import Test.HUnit (runTestTT,Test(..),Assertion, (~?=), (~:), assert)
+import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, elements,
+  oneof, frequency, sized, quickCheckWith, stdArgs, maxSize,
+  classify,  maxSuccess, listOf, resize, scale, (==>))
+
+import qualified Parser as P
+import qualified ParserCombinators as P
+
+import Network
+import System.IO
+import Control.Concurrent
+import Control.Exception (catch, IOException)
+import Control.Monad
+import Data.Maybe
+
+import MultiplayerGame
+
+import Main
+
+-----------------------------------------------------------------
+-- A main action to run all the tests...
+
+main :: IO ()
+main = do
+   _ <- runTestTT (TestList [])
+   --putStrLn "Testing Roundtrip property..."
+   --quickCheckN 100 prop_roundtrip
+   return ()
+
+------------------------ Quickcheck Cases -----------------------
+
+
+
+
+
+
+
+
+------------------------ Mock Game Testing -----------------------
