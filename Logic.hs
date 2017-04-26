@@ -86,11 +86,12 @@ instance PrettyShow Color where
 --          board ->  number cards  -> Set
 -- Gets the cards corresponding to given ints
 getCards :: [Card] -> Maybe (Int,Int,Int) -> Maybe Set
-getCards _ Nothing = Nothing
 getCards board (Just (x,y,z)) = Just (board!!(x-1), board!!(y-1), board!!(z-1))
+getCards board Nothing = Nothing
 
-removePunc :: String -> String
-removePunc xs = [ x | x <- xs, not (x `elem` "()") ]
+removePunc :: Maybe Set -> String
+removePunc Nothing = ""
+removePunc (Just set) = [ x | x <- (show set), not (x `elem` "()") ]
 
 -- Checks if a set is in the board
 boardContainsSet :: Set -> Board -> Bool

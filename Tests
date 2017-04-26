@@ -1,6 +1,5 @@
--- Testing code for HW06
--- Add your own test cases to this file
--- Make sure that you read the .lhs version for clarification
+-- Testing code for Final Project
+
 module Tests where
 
 import Test.HUnit (runTestTT,Test(..),Assertion, (~?=), (~:), assert)

@@ -47,18 +47,17 @@ playTurn :: Handle -> Chan (InputSource, Message) -> ServerFlag ->
 playTurn handle chan isServer deck board src input = withSocketsDo $
     if src == Stdin
     then do
-      -- validates whether the user's input was a valid set, and if so sends a network msg
       let ints = P.getParse parseInP input
       let playedSet = getCards board ints
+      let stringSet = removePunc playedSet
+      -- validates whether the user's input was a valid set, and if so sends a network msg
       if playableSet playedSet board
       --if playableSet (P.getParse parseCards input) board
         then do
           putStrLn "Nice! You got a set."
-          let justSet = fromJust (playedSet)
-          let stringSet = removePunc (show justSet)
           hPutStrLn handle stringSet
           if isServer
-            then serverUpdateGameState
+            then serverUpdateGameState stringSet
             else updateGameState board
         else do
           putStrLn "Not a valid set or set not in board!"
@@ -69,7 +68,7 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
           putStr "Other player found the set: "
           putStrLn input
           if isServer
-            then serverUpdateGameState
+            then serverUpdateGameState input
             else updateGameState board
         else do -- Server sent a new board to the client
           let mBoard = P.getParse parseBoard input
@@ -82,8 +81,8 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
               putStrLn "Received invalid board from server."
     else
       error "Unknown input source"
-    where serverUpdateGameState = do
-              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input)
+    where serverUpdateGameState input' = do
+              (deck', board') <- updateBoardAndDeck (fromJust $ P.getParse parseCards input')
                                                      deck board
               hPrint handle board' -- ** sends the new board to client
               displayBoard board'
