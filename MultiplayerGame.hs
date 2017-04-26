@@ -65,7 +65,7 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
     else if src == Network then
       if isSet input -- Other player sent a valid set
         then do
-          putStr "Other player found the set: "
+          putStr "\nOther player found the set: "
           putStrLn input
           if isServer
             then serverUpdateGameState input

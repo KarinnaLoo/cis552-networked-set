@@ -85,12 +85,12 @@ instance PrettyShow Color where
 ------------------- Game Logic Functions -------------------
 --          board ->  number cards  -> Set
 -- Gets the cards corresponding to given ints
-getCards :: [Card] -> Maybe (Int,Int,Int) -> Maybe Set
+getCards :: Board -> Maybe (Int, Int, Int) -> Maybe Set
 getCards board (Just (x,y,z)) = Just (board!!(x-1), board!!(y-1), board!!(z-1))
-getCards board Nothing = Nothing
+getCards _ Nothing            = Nothing
 
 removePunc :: Maybe Set -> String
-removePunc Nothing = ""
+removePunc Nothing    = ""
 removePunc (Just set) = [ x | x <- (show set), not (x `elem` "()") ]
 
 -- Checks if a set is in the board
@@ -204,9 +204,10 @@ countLetters str c = length $ filter (== c) str
 
 displayBoard :: Board -> IO ()
 displayBoard b = do
-                   putStrLn "Board: "
+                   putStrLn "\nBoard: "
                    putStrLn (prettyShowBoard b) -- This line prints the board with a GUI
                    print b                      -- This line prints the board as is
+                   putStrLn ""
 
 
 ------------------- Parsing -------------------
