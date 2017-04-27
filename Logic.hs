@@ -167,15 +167,16 @@ setToList :: Set -> [Card]
 setToList (c1, c2, c3) = [c1, c2, c3]
 
 updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)
-updateBoardAndDeck (c : cs) []   board = do -- Empty deck
-  let b' = removeOne c board
-  updateBoardAndDeck cs [] b'
-updateBoardAndDeck (c : cs) deck board = do
-  newCardList <- drawCards 1 deck
-  let newCard  = head newCardList
-  let d'       = removeOne newCard deck
-  let b'       = replaceCard c newCard board
-  updateBoardAndDeck cs d' b'
+updateBoardAndDeck (c : cs) deck board
+  | null deck || length board > 12 = do
+                                       let b' = removeOne c board
+                                       updateBoardAndDeck cs deck b'
+  | otherwise                      = do
+                                       newCardList <- drawCards 1 deck
+                                       let newCard  = head newCardList
+                                       let d'       = removeOne newCard deck
+                                       let b'       = replaceCard c newCard board
+                                       updateBoardAndDeck cs d' b'
 updateBoardAndDeck []       deck board =
   if not (playableBoard board) && not (null deck) -- Not playable, so add 3 cards to board
     then deckToBoard deck board

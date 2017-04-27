@@ -50,9 +50,8 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
       let ints = P.getParse parseInP input
       let playedSet = getCards board ints
       let stringSet = removePunc playedSet
-      -- validates whether the user's input was a valid set, and if so sends a network msg
+      -- Validates whether the user's input was a valid set, and if so sends a network msg
       if playableSet playedSet board
-      --if playableSet (P.getParse parseCards input) board
         then do
           putStrLn "Nice! You got a set."
           hPutStrLn handle stringSet
@@ -93,7 +92,7 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
               (deck', board') <- updateBoardAndDeck
                                     (setToList $ fromJust $ P.getParse parseCards input')
                                      deck board
-              hPrint handle board' -- ** sends the new board to client
+              hPrint handle board' -- Sends the new board to client
               displayBoard board'
               mainLoop handle chan isServer deck' board'
           updateGameState = mainLoop handle chan isServer deck
