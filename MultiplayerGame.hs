@@ -47,7 +47,7 @@ playTurn :: Handle -> Chan (InputSource, Message) -> ServerFlag ->
 playTurn handle chan isServer deck board src input = withSocketsDo $
     if src == Stdin
     then do
-      let ints = P.getParse parseInP input
+      let ints      = P.getParse parseInP input
       let playedSet = getCards board ints
       let stringSet = removePunc playedSet
       -- Validates whether the user's input was a valid set, and if so sends a network msg
@@ -66,28 +66,21 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
       if isSet input -- Other player sent a valid set
         then do
           putStrLn "\nOther player found the set: "
-          let set = P.getParse parseCards input
-          case set of 
-            Just (c1, c2, c3) -> do
-              putStrLn (pshow c1)
-              putStrLn (pshow c2)
-              putStrLn (pshow c3)
-            _                 -> putStrLn input
+          let set = fromJust $ P.getParse parseCards input
+          putStrLn $ prettyShowSet set
           putStrLn ("Cards remaining in deck: " ++ (show $ length deck))
           if isServer
             then serverUpdateGameState input
             else updateGameState board
-        else do -- Server sent a new board to the client
-          let mBoard = P.getParse parseBoard input
-          if isJust mBoard
-            then do
-              let board' = fromJust mBoard
-              displayBoard board'
-              updateGameState board'
-            else
-              putStrLn "Received invalid board from server."
+      else if isBoard input -- Server sent board to client
+        then do
+          let board' = fromJust $ P.getParse parseBoard input
+          displayBoard board'
+          updateGameState board'
+      else
+        putStrLn "Received invalid message from other player."
     else
-      error "Unknown input source"
+      error "Unknown input source."
     where serverUpdateGameState input' = do
               (deck', board') <- updateBoardAndDeck
                                     (setToList $ fromJust $ P.getParse parseCards input')

@@ -2,6 +2,7 @@ module Logic where
 
 import Control.Applicative (Alternative(..))
 import Data.List (tails, delete)
+import Data.Maybe (isJust)
 import System.Random
 
 import qualified Parser as P
@@ -57,6 +58,9 @@ prettyShowBoard board =
                                  (if num < 9 then "   " else "  ") ++
                                  showHelper cs (num + 1) boardLength
       showHelper [] _ _        = ""
+
+prettyShowSet :: Set -> String
+prettyShowSet (c1, c2, c3) = pshow c1 ++ "\n" ++ pshow c2 ++ "\n" ++ pshow c3 ++ "\n"
 
 class PrettyShow a where
     pshow :: a -> String
@@ -141,11 +145,6 @@ combinations n xs = do y:xs' <- tails xs
                        ys <- combinations (n-1) xs'
                        return (y:ys)
 
--- updateBoardAndDeck :: Set -> Deck -> Board -> IO (Deck, Board)
--- updateBoardAndDeck set deck board = do
---   let newBoard = removeThree board set -- remove set from board
---   deckToBoard deck newBoard            -- update board and deck
-
 -- Adds three cards to board (called when board has no sets)
 deckToBoard :: Deck -> Board -> IO (Deck, Board)
 deckToBoard [] board   = return ([], board)
@@ -222,9 +221,11 @@ drawCards n cards
                     rest  <- drawCards (n - 1) (removeOne (cards!!index) cards)
                     return (cards!!index : rest)
 
--- possibly redo this later
 isSet :: String -> Bool
-isSet input = countLetters input 'C' == 3 
+isSet input = isJust $ P.getParse parseCards input
+
+isBoard :: String -> Bool
+isBoard input = isJust $ P.getParse parseBoard input
 
 countLetters :: String -> Char -> Int
 countLetters str c = length $ filter (== c) str

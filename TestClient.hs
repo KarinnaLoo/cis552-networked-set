@@ -12,21 +12,41 @@ import qualified Parser as P
 ------------------------------ Simulator --------------------------------
 main :: IO ()
 main = do
-  handle <- connectTo "localhost" (PortNumber 4243)
-  simulateGame handle
+  handle   <- connectTo "localhost" (PortNumber 4243)
+  boardMsg <- hGetLine handle
+  let initialBoard = fromJust $ P.getParse parseBoard boardMsg
+  -- TODO: Validate initial board
+  putStrLn "Initial board:"
+  putStrLn $ prettyShowBoard initialBoard
+  simulateGame handle initialBoard
   hClose handle
   putStrLn "Successfully finished simulation, exiting."
 
-simulateGame :: Handle -> IO ()
-simulateGame handle = do
-  boardMsg <- hGetLine handle
-  let board = fromJust $ P.getParse parseBoard boardMsg
-  let set   = findValidSet board
-  when (isJust set)
-    (do
-       foundSet <- fromJust set
-       hPutStrLn handle (init $ tail $ show $ foundSet)
-       simulateGame handle)
+simulateGame :: Handle -> Board -> IO ()
+simulateGame handle oldBoard = do
+  let set = findValidSet oldBoard
+  if isJust set
+    then do
+      -- Play another turn
+      foundSet <- fromJust set
+      hPutStrLn handle (init $ tail $ show $ foundSet)
+      boardMsg <- hGetLine handle
+      let newBoard = fromJust $ P.getParse parseBoard boardMsg
+      -- Print current game state
+      putStrLn "\nSet found:"
+      putStrLn $ prettyShowSet foundSet
+      putStrLn "New board:"
+      putStrLn $ prettyShowBoard newBoard
+      -- Validate game state
+      validateGameState foundSet oldBoard newBoard
+      simulateGame handle newBoard
+    else
+      putStrLn "No sets left in board."
+      -- TODO: Validate no sets left
+
+-- TODO: Implement
+validateGameState :: Set -> Board -> Board -> IO ()
+validateGameState set oldBoard newBoard = putStrLn "Validating..."
 
 
 --------------------------- Helper Functions ---------------------------
