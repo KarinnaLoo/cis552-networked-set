@@ -24,7 +24,7 @@ main = do
 
 hostGame :: IO ()
 hostGame = withSocketsDo $ do
-    sock <- listenOn $ PortNumber 4242
+    sock <- listenOn $ PortNumber 4243
     putStrLn "Starting server. Waiting for a client to connect..."
     handleConnections sock
     sClose sock
@@ -40,7 +40,7 @@ joinGame :: IO ()
 joinGame = do
     putStrLn "IP address of host: "
     addr <- getLine
-    mHandle <- catch (fmap Just (connectTo addr (PortNumber 4242)))
+    mHandle <- catch (fmap Just (connectTo addr (PortNumber 4243)))
                      (\e -> do
                               let _ = e :: IOException -- Need to specify type of e to compile
                               putStrLn "Couldn't connect to server.\n"

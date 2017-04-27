@@ -45,15 +45,18 @@ data Color =
 ------------------- GUI to print board nicely -------------------
 
 prettyShowBoard :: Board -> String
-prettyShowBoard b =
-    showHelper b (1 :: Int) (length b)
+prettyShowBoard board =
+    showHelper board (1 :: Int) (length board)
     where
-      showHelper b@(c : cs) num boardLength
-        | num > boardLength   = ""
-        | num `mod` 4 == 0    = show num ++ pshow c ++ "\n" ++ showHelper cs (num + 1) boardLength
-        | otherwise           = show num ++ pshow c ++ (if num < 9 then "   " else "  ") ++
-                                showHelper cs (num + 1) boardLength
-      showHelper [] _ _       = ""
+      showHelper (c : cs) num boardLength
+        | num > boardLength    = ""
+        | num `mod` 4 == 0 &&
+          num < boardLength    = show num ++ pshow c ++ "\n" ++ showHelper cs (num + 1) boardLength
+        | otherwise            = (if num `mod` 4 == 1 && num < 10 then " " else "") ++
+                                 show num ++ pshow c ++
+                                 (if num < 9 then "   " else "  ") ++
+                                 showHelper cs (num + 1) boardLength
+      showHelper [] _ _        = ""
 
 class PrettyShow a where
     pshow :: a -> String
@@ -147,10 +150,10 @@ combinations n xs = do y:xs' <- tails xs
 deckToBoard :: Deck -> Board -> IO (Deck, Board)
 deckToBoard [] board   = return ([], board)
 deckToBoard deck board = do
-  cardsDrawn <- drawCards 3 deck
+  cardsDrawn <- drawCards (if length deck >= 3 then 3 else length deck) deck
   let d' = removeList deck cardsDrawn
   let b' = addList board cardsDrawn
-  if not (playableBoard b')
+  if (not (playableBoard b')) && (not (null deck))
     then deckToBoard d' b'
     else return (d', b')
 
@@ -163,8 +166,10 @@ replaceCard oldCard newCard board =
 setToList :: Set -> [Card]
 setToList (c1, c2, c3) = [c1, c2, c3]
 
--- TODO: Check if board is playable
 updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)
+updateBoardAndDeck (c : cs) []   board = do -- Empty deck
+  let b' = removeOne c board
+  updateBoardAndDeck cs [] b'
 updateBoardAndDeck (c : cs) deck board = do
   newCardList <- drawCards 1 deck
   let newCard  = head newCardList
@@ -172,7 +177,7 @@ updateBoardAndDeck (c : cs) deck board = do
   let b'       = replaceCard c newCard board
   updateBoardAndDeck cs d' b'
 updateBoardAndDeck []       deck board =
-  if not (playableBoard board) && not (null deck)
+  if not (playableBoard board) && not (null deck) -- Not playable, so add 3 cards to board
     then deckToBoard deck board
     else return (deck, board)
 
@@ -225,8 +230,9 @@ countLetters str c = length $ filter (== c) str
 
 displayBoard :: Board -> IO ()
 displayBoard b = do
-                   putStrLn "\nBoard: "
+                   putStrLn "\n ~~~~~~~~~~~~~~~~~~~[  Board  ]~~~~~~~~~~~~~~~~~~~"
                    putStrLn (prettyShowBoard b) -- This line prints the board with a GUI
+                   putStrLn " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
                    print b                      -- This line prints the board as is
                    putStrLn ""
 

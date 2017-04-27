@@ -34,8 +34,8 @@ mainLoop :: Handle -> Chan (InputSource, Message) -> ServerFlag -> Deck -> Board
 mainLoop handle chan isServer deck board = withSocketsDo $
     if not (playableBoard board) && null deck
       then do
-        putStrLn "The game has ended."
-        hPutStrLn handle "The game has ended."
+        putStrLn "No sets left, the game has ended.\n"
+        hPutStrLn handle "exit" -- Fix later?
       else do
         (src, input) <- readChan chan
         if input == "exit"
@@ -56,6 +56,7 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
         then do
           putStrLn "Nice! You got a set."
           hPutStrLn handle stringSet
+          putStrLn ("Cards remaining in deck: " ++ (show $ length deck))
           if isServer
             then serverUpdateGameState stringSet
             else updateGameState board
@@ -73,6 +74,7 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
               putStrLn (pshow c2)
               putStrLn (pshow c3)
             _                 -> putStrLn input
+          putStrLn ("Cards remaining in deck: " ++ (show $ length deck))
           if isServer
             then serverUpdateGameState input
             else updateGameState board

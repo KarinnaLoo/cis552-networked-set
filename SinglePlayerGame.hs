@@ -1,5 +1,6 @@
 module SinglePlayerGame where
 
+import Control.Monad (when)
 import Data.Maybe
 
 import Logic
@@ -8,31 +9,30 @@ import qualified Parser as P
 
 ---------------------------------- THE GAME ---------------------------------------
 
-createGame :: IO ()
-createGame = do
+g :: IO ()
+g = do
     putStrLn "Created a new game."
     board <- drawCards 12 genAll
     let deck = removeList genAll board
-    displayBoard board
-    mainLoop deck board
+    (board', deck') <- updateBoardAndDeck [] board deck
+    displayBoard board'
+    mainLoop deck' board'
 
 mainLoop :: Deck -> Board -> IO ()
 mainLoop deck board = do
+    when (not (playableBoard board) && null deck)
+         (putStrLn "No sets left, the game has ended.\n" >> return ())
     input <- getLine
     let ints = P.getParse parseInP input
     let playedSet = getCards board ints
-    let stringSet = removePunc playedSet
-    if not (playableBoard board) && null deck
-      then putStrLn "The game has ended.\n"
-    else if input == "exit"
+    if input == "exit"
       then putStrLn "You quit.\n"
     else if playableSet playedSet board
-    --else if playableSet (P.getParse parseCards input) board
       then do
-        (deck', board') <- updateBoardAndDeck
-                              (setToList $ fromJust $ P.getParse parseCards stringSet)
-                               deck board
+        (deck', board') <- updateBoardAndDeck (setToList $ fromJust $ playedSet)
+                                               deck board
         putStrLn "Nice! you got a set."
+        putStrLn ("Cards remaining in deck: " ++ (show $ length deck))
         displayBoard board'
         mainLoop deck' board' 
       else do
