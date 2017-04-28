@@ -1,6 +1,6 @@
 module SinglePlayerGame where
 
-import Control.Monad (when)
+import Control.Monad (when, void)
 import Data.Maybe
 
 import Logic
@@ -21,7 +21,7 @@ g = do
 mainLoop :: Deck -> Board -> IO ()
 mainLoop deck board = do
     when (not (playableBoard board) && null deck)
-         (putStrLn "No sets left, the game has ended.\n" >> return ())
+         (void $ putStrLn "No sets left, the game has ended.\n")
     input <- getLine
     let ints = P.getParse parseInP input
     let playedSet = getCards board ints
@@ -29,10 +29,10 @@ mainLoop deck board = do
       then putStrLn "You quit.\n"
     else if playableSet playedSet board
       then do
-        (deck', board') <- updateBoardAndDeck (setToList $ fromJust $ playedSet)
+        (deck', board') <- updateBoardAndDeck (setToList $ fromJust playedSet)
                                                deck board
         putStrLn "Nice! you got a set."
-        putStrLn ("Cards remaining in deck: " ++ (show $ length deck))
+        putStrLn ("Cards remaining in deck: " ++ show (length deck))
         displayBoard board'
         mainLoop deck' board' 
       else do

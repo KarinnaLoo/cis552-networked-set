@@ -24,7 +24,7 @@ main = do
 
 hostGame :: IO ()
 hostGame = withSocketsDo $ do
-    sock <- listenOn $ PortNumber 4243
+    sock <- listenOn $ PortNumber 4242
     putStrLn "Starting server. Waiting for a client to connect..."
     handleConnections sock
     sClose sock
@@ -40,7 +40,7 @@ joinGame :: IO ()
 joinGame = do
     putStrLn "IP address of host: "
     addr <- getLine
-    mHandle <- catch (fmap Just (connectTo addr (PortNumber 4243)))
+    mHandle <- catch (fmap Just (connectTo addr (PortNumber 4242)))
                      (\e -> do
                               let _ = e :: IOException -- Need to specify type of e to compile
                               putStrLn "Couldn't connect to server.\n"
@@ -51,12 +51,14 @@ joinGame = do
             setupGameThreads handle False
             hClose handle)
 
+-- Thread that writes stdin input to the shared channel
 getUserInput :: Chan (InputSource, Message) -> IO ()
 getUserInput chan = do
     str <- getLine
     writeChan chan (Stdin, str)
     getUserInput chan
 
+-- Thread that writes network messages to the shared channel
 getNetworkMsg :: Handle -> Chan (InputSource, Message) -> IO ()
 getNetworkMsg handle chan = do
     isHandleClosed <- hIsEOF handle
@@ -68,6 +70,7 @@ getNetworkMsg handle chan = do
         writeChan chan (Network, msg)
         getNetworkMsg handle chan
 
+-- Forks a game thread and returns an MVar that gets filled when the thread exits
 forkGameThread :: Handle -> Chan (InputSource, Message) -> ServerFlag -> IO (MVar ())
 forkGameThread handle chan isServer = do
     mv <- newEmptyMVar

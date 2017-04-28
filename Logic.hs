@@ -235,7 +235,7 @@ displayBoard b = do
                    putStrLn "\n ~~~~~~~~~~~~~~~~~~~[  Board  ]~~~~~~~~~~~~~~~~~~~"
                    putStrLn (prettyShowBoard b) -- This line prints the board with a GUI
                    putStrLn " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                   print b                      -- This line prints the board as is
+                   --print b                      -- This line prints the board as is
                    putStrLn ""
 
 

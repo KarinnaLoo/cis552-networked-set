@@ -18,7 +18,7 @@ g = do
     mainLoop deck' board'
 
 mainLoop :: Deck -> Board -> IO ()
-mainLoop deck board = do
+mainLoop deck board =
     if not (playableBoard board) && null deck
       then putStrLn "No sets left, the game has ended.\n"
     else do
@@ -26,10 +26,10 @@ mainLoop deck board = do
       if playableSet playedSet board
       then do
         (deck', board') <- updateBoardAndDeck
-                              (setToList $ fromJust $ playedSet)
+                              (setToList $ fromJust playedSet)
                                deck board
         putStrLn "Nice! you got a set."
-        putStrLn ("Cards remaining in deck: " ++ (show $ length deck))
+        putStrLn ("Cards remaining in deck: " ++ show (length deck))
         displayBoard board'
         mainLoop deck' board' 
       else do
@@ -37,13 +37,13 @@ mainLoop deck board = do
           mainLoop deck board
 
 
---- Helper Functions ---
+--------------------------- Helper Functions ---------------------------
+
 -- Finds a valid set from board
 findValidSet :: Board -> Set
 findValidSet []    = error "findValidSet empty board"
 findValidSet cards = findValidSet' (combinations 3 cards) cards
 
--- Helper for above
 findValidSet' :: [[Card]] -> Board -> Set
 findValidSet' ([c1, c2, c3] : cs) cards =
     if validSet (c1, c2, c3)

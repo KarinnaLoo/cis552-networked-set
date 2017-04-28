@@ -1,5 +1,5 @@
 make:
-	ghc --make -Wall Main.hs
+	ghc --make -Wall -fwarn-tabs Main.hs
 
 clean:
-	rm -f Main *.hi *.o
+	rm -f Main Tests *.hi *.o
