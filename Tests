@@ -1,0 +1,104 @@
+-- Testing code for Final Project
+
+module Tests where
+
+import Test.HUnit (runTestTT,Test(..),Assertion, (~?=), (~:), assert)
+import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, elements,
+  oneof, frequency, sized, quickCheckWith, stdArgs, maxSize,
+  classify,  maxSuccess, listOf, resize, scale, (==>))
+
+import qualified Parser as P
+import qualified ParserCombinators as P
+
+import Network
+import System.IO
+import Control.Concurrent
+import Control.Exception (catch, IOException)
+import Control.Monad
+import Data.Maybe
+
+import MultiplayerGame
+
+import Main
+
+-----------------------------------------------------------------
+-- A main action to run all the tests...
+
+main :: IO ()
+main = do
+   _ <- runTestTT (TestList [])
+   --putStrLn "Testing Roundtrip property..."
+   --quickCheckN 100 prop_roundtrip
+   return ()
+
+------------------------ Quickcheck Cases -----------------------
+instance Arbitrary Shape where
+  arbitrary = elements [ Triangle
+  					   , Squiggle
+  					   , Oval
+                       ]
+
+instance Arbitrary Filling where
+  arbitrary = elements [ Shaded
+  					   , Solid
+  					   , Outline
+                       ]
+
+instance Arbitrary Number where
+  arbitrary = elements [ One
+  					   , Two
+  					   , Three
+                       ]
+
+instance Arbitrary Color where
+  arbitrary = elements [ Green
+  					   , Red
+  					   , Purple
+                       ]
+
+instance Arbitrary Card where
+	arbitrary = genCard
+
+genCard :: Gen Card
+genCard = Card <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+
+--func :: Monad m => m a -> m b -> m (a, b)
+--func s b = do
+--	st <- s
+--	bo <- b 
+--	return (s,b)
+
+--liftA2 :: Applicative m => (a -> b -> c) -> m a -> m b -> m c
+
+---- (<*>) :: Applicative f => f (a -> b) -> f a -> f b
+--<*> -- 
+
+--genInt :: Gen (Int,Int)
+--genInt a b = (,) <$> arbitrary <*> arbitrary 
+
+---- fmap :: Functor f => (a -> b) -> f a -> f b
+--<$> -- fmap    (a->b) <$> functor
+
+--type Deck  = [Card]
+--type Board = [Card]
+--type Set   = (Card, Card, Card)
+
+--data Card =
+--    Card Shape Filling Number Color
+--  deriving (Eq, Show)
+
+
+--make a generator which always creates boards that contain sets (relatively straightforward) 
+
+--or always creates boards that *don't* contain sets (harder, especially to do efficiently),
+
+-- test that boardContainsSet agrees in those cas
+
+
+
+
+
+
+
+------------------------ Mock Game Testing -----------------------

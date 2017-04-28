@@ -294,6 +294,18 @@ parseBoard = wsP(P.string "[") *> (wsP cardP `P.sepBy` wsP(P.string ",")) <* wsP
 
 
 ----------------- Debugging/Testing -------------------
+-- Finds a valid set from board (IO)
+getValidSetIO :: Board -> IO Set
+getValidSetIO []    = error "Inconsistent board state"
+getValidSetIO cards = getValidSetIO' (combinations 3 cards) cards
+
+-- Helper for above
+getValidSetIO' :: [[Card]] -> Board -> IO Set
+getValidSetIO' ([c1, c2, c3] : cs) cards =
+    if validSet (c1, c2, c3)
+      then return (c1, c2, c3)
+      else getValidSetIO' cs cards 
+getValidSetIO' _ _ = error "Inconsistent board state"
 
 -- Finds a valid set from board
 getValidSet :: Board -> IO ()
