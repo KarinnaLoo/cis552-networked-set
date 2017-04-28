@@ -58,9 +58,10 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
         then do
           putStrLn "Nice! You got a set."
           hPutStrLn handle stringSet -- Send set to other player
-          putStrLn ("Cards remaining in deck: " ++ show (length deck))
           if isServer
-            then serverUpdateGameState stringSet
+            then do
+              putStrLn ("Cards remaining in deck: " ++ show (length deck))
+              serverUpdateGameState stringSet
             else updateGameState board
         else do
           putStrLn "Not a valid set or set not in board!"
@@ -71,9 +72,10 @@ playTurn handle chan isServer deck board src input = withSocketsDo $
           putStrLn "\nOther player found the set: "
           let set = fromJust $ P.getParse parseCards input
           putStrLn $ prettyShowSet set
-          putStrLn ("Cards remaining in deck: " ++ show (length deck))
           if isServer
-            then serverUpdateGameState input
+            then do
+              putStrLn ("Cards remaining in deck: " ++ show (length deck))
+              serverUpdateGameState input
             else updateGameState board
       else if isBoard input -- Server sent board to client
         then do
