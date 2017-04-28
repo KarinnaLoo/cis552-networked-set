@@ -169,7 +169,7 @@ setToList (c1, c2, c3) = [c1, c2, c3]
 tuplify :: [a] -> (a,a,a)
 tuplify [x,y,z] = (x,y,z)
 
--- Give list of cards to remove, updates board and ensures it's playable
+-- Given a list of cards to remove, updates board and ensures it's playable
 updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)
 updateBoardAndDeck (c : cs) deck board
   | null deck || length board > 12 = do
@@ -233,9 +233,6 @@ isSet input = isJust $ P.getParse parseCards input
 -- Checks if the network message is parsable as a board
 isBoard :: String -> Bool
 isBoard input = isJust $ P.getParse parseBoard input
-
-countLetters :: String -> Char -> Int
-countLetters str c = length $ filter (== c) str
 
 -- Prints the board nicely to terminal
 displayBoard :: Board -> IO ()
