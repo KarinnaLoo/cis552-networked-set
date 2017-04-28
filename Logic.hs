@@ -165,6 +165,9 @@ replaceCard oldCard newCard board =
 setToList :: Set -> [Card]
 setToList (c1, c2, c3) = [c1, c2, c3]
 
+tuplify :: [a] -> (a,a,a)
+tuplify [x,y,z] = (x,y,z)
+
 updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)
 updateBoardAndDeck (c : cs) deck board
   | null deck || length board > 12 = do
@@ -294,18 +297,18 @@ parseBoard = wsP(P.string "[") *> (wsP cardP `P.sepBy` wsP(P.string ",")) <* wsP
 
 
 ----------------- Debugging/Testing -------------------
--- Finds a valid set from board (IO)
-getValidSetIO :: Board -> IO Set
-getValidSetIO []    = error "Inconsistent board state"
-getValidSetIO cards = getValidSetIO' (combinations 3 cards) cards
+-- Finds a valid set from board
+retrieveValidSet :: Board -> Maybe Set
+retrieveValidSet []    = Nothing
+retrieveValidSet cards = retrieveValidSet' (combinations 3 cards) cards
 
 -- Helper for above
-getValidSetIO' :: [[Card]] -> Board -> IO Set
-getValidSetIO' ([c1, c2, c3] : cs) cards =
+retrieveValidSet' :: [[Card]] -> Board -> Maybe Set
+retrieveValidSet' ([c1, c2, c3] : cs) cards =
     if validSet (c1, c2, c3)
-      then return (c1, c2, c3)
-      else getValidSetIO' cs cards 
-getValidSetIO' _ _ = error "Inconsistent board state"
+      then Just (c1, c2, c3)
+      else retrieveValidSet' cs cards 
+retrieveValidSet' _ _ = Nothing
 
 -- Finds a valid set from board
 getValidSet :: Board -> IO ()
