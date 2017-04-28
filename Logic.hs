@@ -90,7 +90,7 @@ instance PrettyShow Color where
 
 
 ------------------- Game Logic Functions -------------------
---          board ->  number cards  -> Set
+
 -- Gets the cards corresponding to given ints
 getCards :: Board -> Maybe (Int, Int, Int) -> Maybe Set
 getCards board (Just (x,y,z)) = Just (board!!(x-1), board!!(y-1), board!!(z-1))
@@ -152,10 +152,11 @@ deckToBoard deck board = do
   cardsDrawn <- drawCards (if length deck >= 3 then 3 else length deck) deck
   let d' = removeList deck cardsDrawn
   let b' = addList board cardsDrawn
-  if (not (playableBoard b')) && (not (null deck))
+  if not (playableBoard b') && not (null deck)
     then deckToBoard d' b'
     else return (d', b')
 
+-- Replaces the first card with the second at the same index in the board
 replaceCard :: Card -> Card -> Board -> Board
 replaceCard oldCard newCard board =
   case board of
@@ -165,6 +166,8 @@ replaceCard oldCard newCard board =
 setToList :: Set -> [Card]
 setToList (c1, c2, c3) = [c1, c2, c3]
 
+-- Given a list of cards to remove, ensures that the board is updated to a correct and playable
+-- state
 updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)
 updateBoardAndDeck (c : cs) deck board
   | null deck || length board > 12 = do
@@ -221,21 +224,24 @@ drawCards n cards
                     rest  <- drawCards (n - 1) (removeOne (cards!!index) cards)
                     return (cards!!index : rest)
 
+-- Checks if the network message is parsable as a set
 isSet :: String -> Bool
 isSet input = isJust $ P.getParse parseCards input
 
+-- Checks if the network message is parsable as a board
 isBoard :: String -> Bool
 isBoard input = isJust $ P.getParse parseBoard input
 
 countLetters :: String -> Char -> Int
 countLetters str c = length $ filter (== c) str
 
+-- Prints the board nicely to terminal
 displayBoard :: Board -> IO ()
 displayBoard b = do
                    putStrLn "\n ~~~~~~~~~~~~~~~~~~~[  Board  ]~~~~~~~~~~~~~~~~~~~"
                    putStrLn (prettyShowBoard b) -- This line prints the board with a GUI
                    putStrLn " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                   --print b                      -- This line prints the board as is
+                   --print b                      -- This line prints the board as is, for debug
                    putStrLn ""
 
 
@@ -278,15 +284,18 @@ colorP = constP "Green"  Green   <|>
 
 -- parse input number
 parseInP :: P.Parser (Int,Int,Int)
-parseInP =  pure (,,) <*> wsP P.int <* wsP(P.string ",") <*> wsP P.int <* wsP(P.string ",") <*> wsP P.int
+parseInP =  pure (,,) <*> wsP P.int <* wsP(P.string ",")
+                      <*> wsP P.int <* wsP(P.string ",") <*> wsP P.int
 
 -- parse card
 cardP :: P.Parser Card
-cardP = pure Card <* wsP(P.string "Card") <*> wsP shapeP <*> wsP fillingP <*> wsP numberP <*> wsP colorP
+cardP = pure Card <* wsP(P.string "Card") <*> wsP shapeP <*> wsP fillingP
+                                          <*> wsP numberP <*> wsP colorP
 
 -- parse three card input
 parseCards :: P.Parser Set
-parseCards = pure (,,) <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP
+parseCards = pure (,,) <*> wsP cardP <* wsP(P.string ",")
+                       <*> wsP cardP <* wsP(P.string ",") <*> wsP cardP
 
 -- parse 12 card input
 parseBoard :: P.Parser Board
@@ -294,6 +303,7 @@ parseBoard = wsP(P.string "[") *> (wsP cardP `P.sepBy` wsP(P.string ",")) <* wsP
 
 
 ----------------- Debugging/Testing -------------------
+
 -- Finds a valid set from board (IO)
 getValidSetIO :: Board -> IO Set
 getValidSetIO []    = error "Inconsistent board state"
