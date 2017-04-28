@@ -17,9 +17,8 @@ quickCheckN n = quickCheckWith $ stdArgs { maxSuccess = n }
 
 main :: IO ()
 main = do
-   _ <- runTestTT (TestList [])
-   --putStrLn "Testing Roundtrip property..."
-   --quickCheckN 100 prop_roundtrip
+   _ <- runTestTT (TestList [getCardsTest, removePuncTest, boardContainsSetTest,
+   							 validSetTest, playableSetTest, playableBoardTest])
    quickCheck prop_playableBoardTrue
    quickCheck prop_playableBoardFalse
    return ()
