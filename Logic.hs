@@ -168,7 +168,7 @@ setToList (c1, c2, c3) = [c1, c2, c3]
 
 tuplify :: [a] -> (a,a,a)
 tuplify [x,y,z] = (x,y,z)
-tuplify _ = error "Invalid number of cards in list"
+tuplify _       = error "Invalid number of cards in list"
 
 -- Given a list of cards to remove, updates board and ensures it's playable
 updateBoardAndDeck :: [Card] -> Deck -> Board -> IO (Deck, Board)

@@ -8,8 +8,8 @@ import qualified Parser as P
 
 ---------------------------------- THE GAME ---------------------------------------
 
-g :: IO ()
-g = do
+createGame :: IO ()
+createGame = do
     putStrLn "Created a new game."
     board <- drawCards 12 genAll
     let deck = removeList genAll board
